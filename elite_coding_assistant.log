@@ -1,0 +1,182 @@
+2025-06-24 20:44:20,653 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-06-24 20:44:20,655 - main.coding_director - ERROR - Error verifying models: 'name'
+2025-06-24 20:45:26,380 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-06-24 20:45:26,380 - main.coding_director - ERROR - Error verifying models: 'name'
+2025-06-24 20:46:02,725 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-06-24 20:46:02,726 - main.coding_director - WARNING - Model openhermes:7b not found. Please run: ollama pull openhermes:7b
+2025-06-24 20:46:02,731 - main.coding_director - WARNING - Model deepseek-coder-v2:16b-lite-instruct not found. Please run: ollama pull deepseek-coder-v2:16b-lite-instruct
+2025-06-24 20:46:02,737 - main.coding_director - INFO - CodingDirector initialized successfully
+2025-06-24 20:46:02,750 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:46:02,750 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:46:02,750 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:46:02,757 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:46:02,757 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:47:41,214 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:47:41,240 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:47:41,632 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-06-24 20:47:41,634 - main.coding_director - WARNING - Model openhermes:7b not found. Please run: ollama pull openhermes:7b
+2025-06-24 20:47:41,643 - main.coding_director - WARNING - Model deepseek-coder-v2:16b-lite-instruct not found. Please run: ollama pull deepseek-coder-v2:16b-lite-instruct
+2025-06-24 20:47:41,649 - main.coding_director - INFO - CodingDirector initialized successfully
+2025-06-24 20:47:41,676 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:47:41,677 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:47:41,677 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:47:41,690 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:47:41,691 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:48:17,319 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:48:17,320 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:48:17,329 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:48:17,330 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:48:17,330 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:48:17,338 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:48:17,339 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:49:05,609 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:49:05,609 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:49:05,618 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:49:05,619 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:49:05,619 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:49:05,627 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:49:05,627 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:49:32,552 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:49:32,553 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:49:32,855 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-06-24 20:49:32,856 - main.coding_director - WARNING - Model openhermes:7b not found. Please run: ollama pull openhermes:7b
+2025-06-24 20:49:32,859 - main.coding_director - WARNING - Model deepseek-coder-v2:16b-lite-instruct not found. Please run: ollama pull deepseek-coder-v2:16b-lite-instruct
+2025-06-24 20:49:32,864 - main.coding_director - INFO - CodingDirector initialized successfully
+2025-06-24 20:49:32,870 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:49:32,871 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:49:32,871 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:49:32,877 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:49:32,878 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:50:34,043 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:50:34,044 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:50:34,050 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:50:34,050 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:50:34,051 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:50:34,055 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:50:34,056 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:51:02,252 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:51:02,252 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:51:02,259 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:51:02,260 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:51:02,260 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:51:02,267 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:51:02,269 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:54:27,225 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-06-24 20:54:27,226 - main.coding_director - WARNING - Model openhermes:7b not found. Please run: ollama pull openhermes:7b
+2025-06-24 20:54:27,228 - main.coding_director - WARNING - Model deepseek-coder-v2:16b-lite-instruct not found. Please run: ollama pull deepseek-coder-v2:16b-lite-instruct
+2025-06-24 20:54:27,231 - main.coding_director - INFO - CodingDirector initialized successfully
+2025-06-24 20:54:27,237 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:54:27,238 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:54:27,238 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:54:27,258 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:54:27,258 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:54:50,793 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:54:50,794 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:54:50,959 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-06-24 20:54:50,960 - main.coding_director - WARNING - Model openhermes:7b not found. Please run: ollama pull openhermes:7b
+2025-06-24 20:54:50,961 - main.coding_director - WARNING - Model deepseek-coder-v2:16b-lite-instruct not found. Please run: ollama pull deepseek-coder-v2:16b-lite-instruct
+2025-06-24 20:54:50,963 - main.coding_director - INFO - CodingDirector initialized successfully
+2025-06-24 20:54:50,970 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:54:50,970 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:54:50,971 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:54:50,985 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:54:50,985 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:55:01,275 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:55:01,275 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:55:01,282 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:55:01,282 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:55:01,282 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:55:01,293 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:55:01,293 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:55:25,908 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:55:25,908 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:55:25,914 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:55:25,914 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:55:25,914 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:55:25,919 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:55:25,920 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:55:31,946 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:55:31,946 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:55:32,204 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-06-24 20:55:32,206 - main.coding_director - WARNING - Model openhermes:7b not found. Please run: ollama pull openhermes:7b
+2025-06-24 20:55:32,208 - main.coding_director - WARNING - Model deepseek-coder-v2:16b-lite-instruct not found. Please run: ollama pull deepseek-coder-v2:16b-lite-instruct
+2025-06-24 20:55:32,212 - main.coding_director - INFO - CodingDirector initialized successfully
+2025-06-24 20:55:32,219 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:55:32,219 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:55:32,220 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:55:32,224 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:55:32,225 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:55:54,341 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:55:54,341 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:55:54,361 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:55:54,362 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:55:54,362 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:55:54,367 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:55:54,368 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:56:04,722 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:56:04,723 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:56:04,735 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:56:04,736 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:56:04,736 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:56:04,742 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:56:04,742 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:56:20,328 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:56:20,328 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:56:20,505 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-06-24 20:56:20,505 - main.coding_director - WARNING - Model openhermes:7b not found. Please run: ollama pull openhermes:7b
+2025-06-24 20:56:20,507 - main.coding_director - WARNING - Model deepseek-coder-v2:16b-lite-instruct not found. Please run: ollama pull deepseek-coder-v2:16b-lite-instruct
+2025-06-24 20:56:20,509 - main.coding_director - INFO - CodingDirector initialized successfully
+2025-06-24 20:56:20,515 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:56:20,515 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:56:20,515 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:56:20,521 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:56:20,522 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:57:05,731 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:57:05,731 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:57:06,041 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-06-24 20:57:06,042 - main.coding_director - WARNING - Model openhermes:7b not found. Please run: ollama pull openhermes:7b
+2025-06-24 20:57:06,044 - main.coding_director - WARNING - Model deepseek-coder-v2:16b-lite-instruct not found. Please run: ollama pull deepseek-coder-v2:16b-lite-instruct
+2025-06-24 20:57:06,048 - main.coding_director - INFO - CodingDirector initialized successfully
+2025-06-24 20:57:06,054 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:57:06,054 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:57:06,054 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:57:06,061 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:57:06,061 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:57:25,595 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:57:25,595 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:57:25,922 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-06-24 20:57:25,922 - main.coding_director - WARNING - Model openhermes:7b not found. Please run: ollama pull openhermes:7b
+2025-06-24 20:57:25,924 - main.coding_director - WARNING - Model deepseek-coder-v2:16b-lite-instruct not found. Please run: ollama pull deepseek-coder-v2:16b-lite-instruct
+2025-06-24 20:57:25,932 - main.coding_director - INFO - CodingDirector initialized successfully
+2025-06-24 20:57:25,939 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:57:25,939 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:57:25,939 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:57:25,945 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:57:25,946 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:57:42,373 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:57:42,375 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:57:42,674 - httpx - INFO - HTTP Request: GET http://127.0.0.1:11434/api/tags "HTTP/1.1 200 OK"
+2025-06-24 20:57:42,676 - main.coding_director - WARNING - Model openhermes:7b not found. Please run: ollama pull openhermes:7b
+2025-06-24 20:57:42,678 - main.coding_director - WARNING - Model deepseek-coder-v2:16b-lite-instruct not found. Please run: ollama pull deepseek-coder-v2:16b-lite-instruct
+2025-06-24 20:57:42,683 - main.coding_director - INFO - CodingDirector initialized successfully
+2025-06-24 20:57:42,689 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:57:42,693 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:57:42,693 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:57:42,699 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:57:42,699 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:57:48,334 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:57:48,334 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:57:48,340 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:57:48,340 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:57:48,340 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:57:48,346 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:57:48,346 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:57:59,183 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:57:59,183 - main.coding_director - INFO - Successful response from Senior Developer
+2025-06-24 20:57:59,190 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:57:59,192 - main.coding_director - ERROR - Classification error: model 'openhermes:7b' not found (status code: 404)
+2025-06-24 20:57:59,192 - main.coding_director - INFO - Task classified as: general
+2025-06-24 20:57:59,199 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 404 Not Found"
+2025-06-24 20:57:59,200 - main.coding_director - ERROR - Error with Lead Developer: model 'deepseek-coder-v2:16b-lite-instruct' not found (status code: 404)
+2025-06-24 20:58:08,295 - httpx - INFO - HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+2025-06-24 20:58:08,296 - main.coding_director - INFO - Successful response from Senior Developer

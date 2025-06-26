@@ -1,0 +1,175 @@
+================================================================================
+PYDANTIC-FIRST IMPORT VALIDATION REPORT
+================================================================================
+
+TOTAL FILES SCANNED: 39
+TOTAL IMPORTS FOUND: 465
+FILES WITH ISSUES: 0
+
+ISSUE SEVERITY BREAKDOWN:
+  CRITICAL: 0
+  HIGH:     0
+  MEDIUM:   0
+  LOW:      0
+
+PYDANTIC MODELS FOUND:
+----------------------------------------
+conversation_memory.ConversationInteraction (main\conversation_memory.py:27)
+  Fields: interaction_id, conversation_id, user_id, timestamp, user_prompt, response, feedback, tags, embedding
+  Validators: 
+
+conversation_memory.ConversationSummary (main\conversation_memory.py:38)
+  Fields: conversation_id, summary, generated_at, method
+  Validators: 
+
+conversation_memory.ConversationStats (main\conversation_memory.py:44)
+  Fields: conversation_id, total_interactions, unique_users, avg_response_length, avg_prompt_length, start_time, end_time
+  Validators: 
+
+document_ingestion_system.DocumentContent (main\document_ingestion_system.py:77)
+  Fields: text, metadata, sections, images, links
+  Validators: 
+
+document_ingestion_system.ProcessingResult (main\document_ingestion_system.py:92)
+  Fields: document_id, status, content, error_message, processing_time, created_at
+  Validators: 
+
+feedback_integration_tools.FeedbackItem (main\feedback_integration_tools.py:114)
+  Fields: id, user_id, session_id, channel, feedback_type, content, sentiment, priority, status, context, metadata, tags, created_at, updated_at, processed_at, response_sent_at
+  Validators: 
+
+feedback_integration_tools.FeedbackAnalysis (main\feedback_integration_tools.py:145)
+  Fields: feedback_id, sentiment_score, confidence, key_topics, entities, urgency_score, similar_feedback_ids, suggested_actions, analysis_metadata, created_at
+  Validators: 
+
+feedback_integration_tools.FeedbackResponse (main\feedback_integration_tools.py:159)
+  Fields: id, feedback_id, response_type, content, channel, automated, sent_at, metadata
+  Validators: 
+
+feedback_integration_tools.FeedbackAction (main\feedback_integration_tools.py:171)
+  Fields: id, feedback_id, action_type, description, status, assigned_to, due_date, completed_at, metadata, created_at
+  Validators: 
+
+import_validator.ImportIssue (main\import_validator.py:61)
+  Fields: file_path, line_number, original_import, issue_type, suggested_fix, severity
+  Validators: validate_severity
+
+import_validator.ImportValidationResult (main\import_validator.py:78)
+  Fields: total_files_scanned, total_imports_found, issues_found, files_with_issues, critical_issues, high_issues, medium_issues, low_issues
+  Validators: 
+
+import_validator.PydanticModelInfo (main\import_validator.py:97)
+  Fields: file_path, class_name, line_number, fields, validators, inherits_from_basemodel
+  Validators: 
+
+interactive_training_interface.TrainingInteraction (main\interactive_training_interface.py:81)
+  Fields: id, session_id, interaction_type, user_input, ai_response, timestamp, response_time, user_rating, feedback, metadata
+  Validators: 
+
+interactive_training_interface.TrainingSession (main\interactive_training_interface.py:95)
+  Fields: id, user_id, scenario_id, title, status, start_time, end_time, interactions, objectives, progress_metrics, notes
+  Validators: 
+
+knowledge_validation.KnowledgeItem (main\knowledge_validation.py:86)
+  Fields: id, content, source, category, tags, confidence_score, created_at, updated_at, validation_status, metadata, embeddings
+  Validators: validate_confidence
+
+knowledge_validation.ValidationResult (main\knowledge_validation.py:125)
+  Fields: id, knowledge_item_id, rule_id, status, confidence_score, issues, suggestions, metadata, timestamp
+  Validators: 
+
+knowledge_validation.KnowledgeConflict (main\knowledge_validation.py:138)
+  Fields: id, conflict_type, knowledge_items, description, severity, resolution_suggestions, detected_at, resolved, resolution_notes
+  Validators: 
+
+learning_material_processing.ContentSection (main\learning_material_processing.py:97)
+  Fields: id, title, content, section_type, order, difficulty, objectives, code_examples, key_concepts, metadata
+  Validators: 
+
+learning_material_processing.LearningMaterial (main\learning_material_processing.py:111)
+  Fields: id, title, description, source_document_id, content_type, difficulty, estimated_duration, prerequisites, learning_objectives, sections, tags, created_at, updated_at, processing_status, quality_score, metadata
+  Validators: 
+
+learning_material_processing.LearningPath (main\learning_material_processing.py:145)
+  Fields: id, title, description, target_audience, difficulty_progression, materials, estimated_duration, prerequisites, learning_outcomes, created_at, metadata
+  Validators: 
+
+learning_orchestrator.LearningDependencies (main\learning_orchestrator.py:79)
+  Fields: supabase_client, conversation_id, user_id, interaction_history, performance_cache
+  Validators: 
+
+learning_orchestrator.RoutingRequest (main\learning_orchestrator.py:88)
+  Fields: user_prompt, context, domain_hints, complexity_hint, user_preferences
+  Validators: 
+
+learning_orchestrator.CodingResponse (main\learning_orchestrator.py:97)
+  Fields: code, explanation, language, complexity_level, confidence_score, suggestions, related_concepts
+  Validators: 
+
+learning_orchestrator.LearningInsight (main\learning_orchestrator.py:108)
+  Fields: insight_type, description, confidence, actionable_items, impact_score
+  Validators: 
+
+pattern_recognizer_agent.PatternSummary (main\pattern_recognizer_agent.py:24)
+  Fields: frequent_keywords, frequent_phrases, user_intents, model_usage, topics, clusters, notes
+  Validators: 
+
+prompt_models.PromptContext (main\prompt_models.py:4)
+  Fields: user_id, conversation_id, recent_history, retrieved_knowledge, recognized_patterns, feedback
+  Validators: 
+
+prompt_models.PromptResult (main\prompt_models.py:13)
+  Fields: prompt, context, notes, score
+  Validators: 
+
+realtime_api_server.UserAuth (main\realtime_api_server.py:58)
+  Fields: user_id, token, session_id
+  Validators: 
+
+realtime_api_server.SystemStatus (main\realtime_api_server.py:64)
+  Fields: status, timestamp, version, uptime_seconds, active_connections, active_streams, active_collaborations, active_debug_sessions, redis_connected, memory_usage_mb, cpu_usage_percent
+  Validators: 
+
+realtime_api_server.MetricRequest (main\realtime_api_server.py:78)
+  Fields: metric_type, value, tags, timestamp
+  Validators: 
+
+realtime_api_server.FeedbackRequest (main\realtime_api_server.py:85)
+  Fields: feedback_type, content, rating, metadata
+  Validators: 
+
+realtime_api_server.NotificationRequest (main\realtime_api_server.py:92)
+  Fields: notification_type, title, message, user_id, session_id, data, expires_in_minutes
+  Validators: 
+
+realtime_api_server.CollaborationRequest (main\realtime_api_server.py:102)
+  Fields: file_path, content, permissions
+  Validators: 
+
+realtime_api_server.DebugSessionRequest (main\realtime_api_server.py:108)
+  Fields: file_path, breakpoints
+  Validators: 
+
+realtime_api_server.CodeOperationRequest (main\realtime_api_server.py:113)
+  Fields: operation_type, position, content, length, attributes
+  Validators: 
+
+realtime_api_server.CursorUpdateRequest (main\realtime_api_server.py:121)
+  Fields: file_path, line, column, selection_start, selection_end
+  Validators: 
+
+retrieval_agent.RetrievalResult (main\retrieval_agent.py:22)
+  Fields: item_id, score, content, metadata
+  Validators: 
+
+supabase_learning_client.InteractionDataModel (main\supabase_learning_client.py:62)
+  Fields: conversation_id, user_prompt, initial_classification, model_used, routing_confidence, response, response_time_ms, token_usage, context, success_rating, user_feedback, feedback_type, learning_tags, complexity_score, domain_tags
+  Validators: 
+
+supabase_learning_client.LearningPatternModel (main\supabase_learning_client.py:90)
+  Fields: pattern_signature, keywords, domain_context, recommended_model, success_count, failure_count, pattern_strength
+  Validators: 
+
+supabase_learning_client.KnowledgeItemModel (main\supabase_learning_client.py:109)
+  Fields: title, content, knowledge_type, domain_tags, source_type, confidence_score
+  Validators: 

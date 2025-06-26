@@ -1,0 +1,57 @@
+# Real-Time Features Dependencies for Elite Coding Assistant
+# Core real-time functionality requirements
+
+# FastAPI and WebSocket support
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+websockets>=12.0
+starlette>=0.27.0
+
+# Redis for real-time data and caching
+redis[hiredis]>=5.0.1
+
+# Data validation and serialization
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# HTTP client and security
+httpx>=0.25.2
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.6
+
+# System monitoring
+psutil>=5.9.6
+
+# Async support
+aiofiles>=23.2.1
+aioredis>=2.0.1
+
+# JSON handling
+orjson>=3.9.10
+
+# Date/time utilities
+python-dateutil>=2.8.2
+
+# Logging and monitoring
+structlog>=23.2.0
+
+# Development and testing
+pytest>=7.4.3
+pytest-asyncio>=0.21.1
+pytest-cov>=4.1.0
+
+# Optional: Enhanced WebSocket features
+websocket-client>=1.6.4
+
+# Optional: Message queuing (if needed for scaling)
+# celery>=5.3.4
+# kombu>=5.3.4
+
+# Optional: Monitoring and metrics
+# prometheus-client>=0.19.0
+# grafana-api>=1.0.3
+
+# Optional: Load balancing and clustering
+# gunicorn>=21.2.0
+# gevent>=23.9.1
