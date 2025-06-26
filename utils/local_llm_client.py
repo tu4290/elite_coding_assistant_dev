@@ -122,7 +122,8 @@ class LocalLLMClient:
         self.logger = logging.getLogger(__name__)
         
         # Initialize Ollama client
-        self.client = AsyncClient(host=config.ollama_host)
+        # config here is SystemConfig, which has ollama_base_url property
+        self.client = AsyncClient(host=config.ollama_base_url)
         
         # Model configurations
         self.models: Dict[str, ModelConfig] = {}
@@ -158,11 +159,14 @@ class LocalLLMClient:
             model_cfg = ModelConfig(
                 name=ext_config.model_id, # Use model_id from config as the key/name
                 role=role_enum,
-                timeout=ext_config.performance.timeout if hasattr(ext_config.performance, 'timeout') else 30, # Add timeout to ModelPerformanceConfig if needed
+                # Ensure all performance params from IndividualModelConfig.performance are used
+                timeout=ext_config.performance.timeout,
                 temperature=ext_config.performance.temperature,
                 max_tokens=ext_config.performance.max_tokens,
-                context_window=ext_config.performance.context_length if hasattr(ext_config.performance, 'context_length') else 4096,
+                # context_window in ModelConfig maps to context_length in IndividualModelConfig.performance
+                context_window=ext_config.performance.context_length or 4096,
                 enabled=ext_config.enabled
+                # Other params like top_p, top_k, repeat_penalty will be handled in generate_response
             )
             self.models[ext_config.model_id] = model_cfg
         
@@ -259,7 +263,15 @@ class LocalLLMClient:
         system_prompt: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        stream: bool = False
+        stream: bool = False,
+        # Add other potential Ollama options that can be configured per call
+        top_p: Optional[float] = None,
+        top_k: Optional[int] = None,
+        repeat_penalty: Optional[float] = None,
+        # context_length / num_ctx is usually a model load time param,
+        # but some models might allow per-request context window if less than max.
+        # For now, assuming context_window from ModelConfig is primary.
+        **kwargs: Any # For any other ollama options
     ) -> Union[ModelResponse, AsyncGenerator[str, None]]:
         """
         Generate response from specified model.
@@ -269,8 +281,12 @@ class LocalLLMClient:
             prompt: User prompt
             system_prompt: Optional system prompt
             temperature: Optional temperature override
-            max_tokens: Optional max tokens override
+            max_tokens: Optional max_tokens (num_predict) override
             stream: Whether to stream the response
+            top_p: Optional top_p override
+            top_k: Optional top_k override
+            repeat_penalty: Optional repeat_penalty override
+            **kwargs: Additional options for ollama client.
             
         Returns:
             ModelResponse object or async generator for streaming
@@ -278,21 +294,49 @@ class LocalLLMClient:
         if model_name not in self.models:
             raise ValueError(f"Unknown model: {model_name}")
         
-        model_config = self.models[model_name]
-        if not model_config.enabled:
+        model_config_internal = self.models[model_name] # This is utils.local_llm_client.ModelConfig
+        if not model_config_internal.enabled:
             raise ValueError(f"Model {model_name} is disabled")
         
-        # Prepare request parameters
+        # Get the full external model configuration to access all performance params
+        # This assumes ModelManager has passed the full config or LocalLLMClient has access to it.
+        # For now, we'll assume ModelManager passes these specific overrides if they differ from model_config_internal defaults
+        # Or, IndividualModelConfig's performance object should be stored/accessible.
+        # Let's fetch from self.config (SystemConfig) which would hold the full ModelsConfig if refactored.
+        # This part highlights that LocalLLMClient needs access to the richer IndividualModelConfig.performance settings.
+        # For now, we'll use the overrides passed or the defaults from model_config_internal.
+
         messages = []
-        if system_prompt:
+        if system_prompt: # Use provided system_prompt if available
             messages.append({"role": "system", "content": system_prompt})
+        # Note: IndividualModelConfig.system_prompt is handled by ModelManager before calling this.
+
         messages.append({"role": "user", "content": prompt})
         
+        # Build options dictionary for Ollama client
+        # Prioritize call-specific overrides, then model_config_internal values
         options = {
-            "temperature": temperature or model_config.temperature,
-            "num_predict": max_tokens or model_config.max_tokens,
+            "temperature": temperature if temperature is not None else model_config_internal.temperature,
+            "num_predict": max_tokens if max_tokens is not None else model_config_internal.max_tokens,
+            # num_ctx (context_window) is usually set when loading model or globally.
+            # It's less common to set per-request unless the model supports dynamic context sizing.
+            # We'll use model_config_internal.context_window if ollama client supports it in options.
+            "num_ctx": model_config_internal.context_window
         }
-        
+        if top_p is not None:
+            options["top_p"] = top_p
+        if top_k is not None:
+            options["top_k"] = top_k
+        if repeat_penalty is not None:
+            options["repeat_penalty"] = repeat_penalty
+
+        # Add any other kwargs to options if they are valid Ollama options
+        # (e.g. stop sequences)
+        for k, v in kwargs.items():
+            if v is not None: # Only add if a value is provided
+                options[k] = v
+
+        self.logger.debug(f"Ollama options for {model_name}: {options}")
         start_time = time.time()
         
         try:
@@ -388,18 +432,58 @@ class LocalLLMClient:
                 yield content_chunk
         
         # Update metrics after streaming is complete
+        # The 'response' object from ollama stream is the last chunk,
+        # which contains full stats like 'eval_count', 'total_duration'.
+        final_chunk_stats = chunk # The last chunk has the summary if stream=True
         end_time = time.time()
         response_time_ms = (end_time - start_time) * 1000
-        tokens_generated = len(full_content.split())
         
+        # Use tiktoken or a similar library for more accurate token counting if available
+        # For now, simple word count as a proxy.
+        tokens_generated = final_chunk_stats.get("eval_count", len(full_content.split())) # Prefer eval_count
+
+        # Create a mock response object for confidence calculation if needed, or use final_chunk_stats
+        mock_response_for_confidence = {
+            'message': {'content': full_content},
+            'eval_count': final_chunk_stats.get("eval_count"),
+            'eval_duration': final_chunk_stats.get("eval_duration")
+        }
+        confidence_score = self._calculate_confidence_score(mock_response_for_confidence)
+
         self._update_performance_metrics(
             model_name,
             success=True,
             response_time_ms=response_time_ms,
             tokens_generated=tokens_generated,
-            confidence_score=0.8  # Default for streaming
+            confidence_score=confidence_score
         )
     
+    async def generate_embeddings_ollama(self, model_name: str, texts: List[str]) -> List[List[float]]:
+        """
+        Generates embeddings for a list of texts using the specified Ollama model.
+        """
+        if model_name not in self.models:
+            # Or check if the model is specifically an embedding model if roles are very strict
+            self.logger.warning(f"Model '{model_name}' not in standard chat models, but attempting for embeddings.")
+
+        # Ensure model is enabled (optional, depends on how embedding models are managed)
+        # model_config_internal = self.models.get(model_name)
+        # if model_config_internal and not model_config_internal.enabled:
+        #     raise ValueError(f"Embedding model {model_name} is disabled")
+
+        all_embeddings = []
+        try:
+            for text_input in texts:
+                response = await self.client.embeddings(model=model_name, prompt=text_input)
+                all_embeddings.append(response["embedding"])
+            self.logger.info(f"Generated embeddings for {len(texts)} texts using {model_name}.")
+            return all_embeddings
+        except Exception as e:
+            self.logger.error(f"Error generating embeddings with {model_name} for '{texts[0][:50]}...': {e}")
+            # Decide on error strategy: raise, or return empty/partial, or mark with None
+            # For now, let's re-raise so caller (ModelManager) can handle it.
+            raise
+
     def _calculate_confidence_score(self, response: Dict[str, Any]) -> float:
         """
         Calculate confidence score based on response metadata.

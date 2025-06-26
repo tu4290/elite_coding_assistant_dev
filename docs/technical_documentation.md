@@ -132,75 +132,81 @@ Infrastructure:
 **Purpose**: Loads, validates, and provides access to system and model configurations.
 
 **Key Classes & Functionality**:
-- `ConfigManager`: Loads `config/system.json` and `config/models.json`.
-- `SystemConfig` (Pydantic Model): Defines structure for system settings (logging, Ollama URL, etc.). Includes `ollama_base_url` property.
-- `ModelsConfig`, `IndividualModelConfig`, `ModelPerformanceConfig` (Pydantic Models): Define structure for model definitions, roles, system prompts, and performance parameters.
-- Provides methods to retrieve the entire configuration object (`EnhancedConfig`) or specific parts (system config, specific model config by role).
-- Handles Pydantic validation of configuration files.
+- `ConfigManager`: Orchestrates loading of `config/system.json` and `config/models.json`.
+- `SystemConfig` (Pydantic Model): Structures system-level settings like logging configuration, Ollama host/port, and computes the `ollama_base_url`.
+- `ModelsConfig`, `IndividualModelConfig`, `ModelPerformanceConfig` (Pydantic Models): Define the schema for LLM configurations, including roles, specific Ollama model IDs (e.g., `openhermes:7b`), system prompts, and detailed performance parameters (temperature, max_tokens, top_p, top_k, repeat_penalty, context_length, timeout).
+- Provides access methods like `get_config()` (returns `EnhancedConfig`), `get_system_config()`, `get_models_config()`, and `get_model_config(role_name: str)`.
+- Ensures all loaded configurations are validated against these Pydantic schemas.
 
 **Implementation Highlights**:
 ```python
 class ConfigManager:
-    def __init__(self, system_config_path: Path, models_config_path: Path): # ...
-    def load_config(self) -> EnhancedConfig: # ...
-    # ... other getter methods
+    def load_config(self) -> EnhancedConfig: # Returns Pydantic validated config
+    # ...
 ```
 
 #### 2. Model Manager (`main/model_manager.py`)
 
-**Purpose**: Manages interactions with LLMs, primarily by orchestrating `LocalLLMClient` based on loaded configurations.
+**Purpose**: Central service for managing and interacting with all configured LLMs, primarily through `LocalLLMClient`.
 
 **Key Classes & Functionality**:
 - `ModelManager`:
-    - Initializes with `EnhancedConfig` (from `ConfigManager`).
-    - Instantiates `LocalLLMClient`, providing it with system configurations (like Ollama URL).
-    - `initialize_clients()`: Asynchronously connects `LocalLLMClient` and primes it with model definitions derived from `config/models.json` (via `LocalLLMClient.prime_model_configurations`).
-    - `get_completion_by_role(role: str, prompt: str, ...)`: Core method to request LLM completions. It identifies the correct Ollama model ID and parameters for the given role from its configuration and calls `LocalLLMClient.generate_response()`. Supports streaming.
-    - `get_embeddings(...)`: Placeholder for future embedding generation.
-    - `health_check_models()`: Delegates to `LocalLLMClient` for health status.
+    - Initialized with an `EnhancedConfig` object (from `ConfigManager`).
+    - Instantiates `LocalLLMClient`, passing the `SystemConfig` (which includes the `ollama_base_url`).
+    - `initialize_clients()`: Critical async method that must be called after instantiation. It primes the `LocalLLMClient` with all model definitions from `EnhancedConfig.models` (using `LocalLLMClient.prime_model_configurations()`) and then establishes the connection to Ollama via `LocalLLMClient.connect()`.
+    - `get_completion_by_role(role: str, prompt: str, **kwargs)`: Primary interface for agents. It retrieves the `IndividualModelConfig` for the given role, and calls `LocalLLMClient.generate_response()`, passing the correct Ollama `model_id`, the user `prompt`, the role's configured `system_prompt` (unless overridden), and all specified `performance` parameters (temperature, max_tokens, top_p, top_k, repeat_penalty). Supports streaming.
+    - `get_embeddings(texts: List[str], model_name: Optional[str] = None)`: Generates embeddings by calling `LocalLLMClient.generate_embeddings_ollama()`. It can use a specified `model_name` or defaults to a system-defined embedding model (currently "nomic-embed-text", future improvement to make this configurable).
+    - `health_check_models()`: Delegates to `LocalLLMClient.health_check()` for Ollama and model status.
 
 **Implementation Highlights**:
 ```python
 class ModelManager:
-    def __init__(self, config: EnhancedConfig): # ...
-    async def initialize_clients(self): # ...
-    async def get_completion_by_role(self, role: str, prompt: str, ...) -> ...: # ...
+    async def initialize_clients(self): # Primes and connects LocalLLMClient
+    async def get_completion_by_role(self, role: str, prompt: str, **kwargs) -> ...:
+    async def get_embeddings(self, texts: List[str], model_name: Optional[str]) -> ...:
 ```
 
 #### 3. Coding Director (`main/coding_director.py`)
 
-**Purpose**: Main AI orchestrator, likely a Pydantic AI agent, that uses `ModelManager` to classify tasks and route them to appropriate specialist LLMs.
+**Purpose**: The main orchestrator for handling coding-related requests. It's a standard Python class using Pydantic models for I/O, not a direct `pydantic-ai.Agent` subclass.
 
 **Key Classes & Functionality**:
 - `CodingDirector`:
-    - Initializes with `ConfigManager` and `ModelManager`.
-    - `initialize()`: Ensures `ModelManager` (and its clients) are initialized.
-    - `classify_task(user_prompt: str)`: Uses the "router" model (via `ModelManager`) to determine if a task is "math" or "general".
-    - `process_request(context: CodingRequestContext)`:
-        - Orchestrates the overall response generation.
-        - Calls `classify_task`.
-        - Routes the request to a primary specialist LLM (e.g., "math_specialist" or "lead_developer") through `ModelManager`.
-        - Implements a fallback strategy: if the primary model fails or returns an unsatisfactory response, it tries "senior_developer", then "principal_architect".
-        - Returns a structured `CodingDirectorResponse`.
+    - Initializes with `ConfigManager` and `ModelManager` instances as dependencies.
+    - `initialize()`: Async method to ensure its `ModelManager` (and thus `LocalLLMClient`) is initialized and connected. Returns `True` on success.
+    - Defines Pydantic models for its request and response structures:
+        - `CodingTaskRequestContext`: Captures user input, including prompt, language, conversation history, retrieved knowledge, recognized patterns, and other project/file context. Validated on input.
+        - `CodingDirectorFinalResult`: Structured output detailing the task classification, the final LLM response content, the specific model ID and role that generated it, any errors, and processing time.
+    - `process_request(context: CodingTaskRequestContext)`:
+        - Performs initial validation of the `context`.
+        - Calls `initialize()` if not already done.
+        - Invokes `classify_task()` which uses the "router" LLM (via `ModelManager`) to classify the `user_prompt` (e.g., into "math" or "general").
+        - Constructs a detailed prompt for specialist LLMs by combining `user_prompt` with other relevant information from `CodingTaskRequestContext` (language, history, knowledge, file paths, etc.).
+        - Routes to a primary specialist ("math_specialist" or "lead_developer") via `ModelManager.get_completion_by_role()`.
+        - Implements a fallback chain (to "senior_developer", then "principal_architect") if earlier models fail or return empty/unsatisfactory content.
+    - Manages errors gracefully throughout the process, populating `CodingDirectorFinalResult.error_message` if issues occur.
 
 **Implementation Highlights**:
 ```python
-class CodingDirector(PydanticAIAgentBase): # Conceptual base
-    def __init__(self, config_manager: ConfigManager, model_manager: ModelManager, ...): # ...
-    async def process_request(self, context: CodingRequestContext) -> CodingDirectorResponse: # ...
+class CodingDirector:
+    async def initialize(self) -> bool: # Ensures ModelManager is ready
+    async def classify_task(self, user_prompt: str) -> Optional[str]: # Uses 'router' model
+    async def process_request(self, context: CodingTaskRequestContext) -> CodingDirectorFinalResult: # Main orchestration
 ```
 
 #### 3.1. Local LLM Client (`utils/local_llm_client.py`)
 *(Note: This is a utility but crucial for ModelManager)*
 
-**Purpose**: Provides a direct interface to the Ollama API for local LLM interactions.
+**Purpose**: Provides a direct, low-level interface to the Ollama API for all local LLM interactions.
 
 **Key Functionality**:
-- Uses `ollama.AsyncClient` for communication.
-- `prime_model_configurations()`: Method called by `ModelManager` to dynamically load model definitions (ID, role, performance params) that were originally read from `config/models.json`. This replaces previous hardcoded configurations.
-- `generate_response()`: Sends requests to the specified Ollama model (e.g., `openhermes:7b`) with appropriate system prompts, user prompts, and performance parameters. Supports streaming and non-streaming.
-- Manages performance metrics (requests, success/failure, response times, tokens/sec) for each configured model.
-- Includes `connect()` for initial connection and model verification against Ollama, and `health_check()`.
+- Uses `ollama.AsyncClient` for all HTTP communications with the Ollama server, configured with the `ollama_base_url` from `SystemConfig`.
+- `prime_model_configurations(configured_models: List[IndividualModelConfig])`: Method called by `ModelManager` during initialization. It takes a list of `IndividualModelConfig` objects (derived from `config/models.json`) and populates its internal `self.models` dictionary with `ModelConfig` instances. This makes the client aware of all usable models and their default parameters (like `context_window` which maps to `num_ctx`).
+- `generate_response(model_name: str, prompt: str, system_prompt: Optional[str], ...)`: The core method for generating text via Ollama's chat completions. It accepts the Ollama `model_id` (e.g., "openhermes:7b"), user prompt, system prompt, and a comprehensive set of Ollama-specific performance parameters (`temperature`, `num_predict` (max_tokens), `top_p`, `top_k`, `repeat_penalty`, `num_ctx`). It supports both streaming and non-streaming responses and returns a structured `ModelResponse` or an async generator.
+- `generate_embeddings_ollama(model_name: str, texts: List[str])`: A new method that calls the Ollama `/api/embeddings` endpoint for each text provided, using the specified Ollama `model_name` (which should be an embedding model like "nomic-embed-text").
+- Manages and updates detailed performance metrics (`ModelPerformanceMetrics`) for each model it interacts with, including request counts, success/failure rates, average response times, and tokens per second.
+- `connect()`: Establishes the initial connection and verifies that the primed models are actually available in the Ollama instance by calling `ollama.AsyncClient.list()`. Marks unavailable models as disabled.
+- `health_check()`: Provides ongoing status of the Ollama connection and model availability.
 
 #### 3. Recursive Learning Engine (`main/recursive_learning_engine.py`)
 

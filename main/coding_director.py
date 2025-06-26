@@ -2,34 +2,96 @@ import asyncio
 import logging
 from typing import Dict, Any, Optional, Union, AsyncGenerator
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # Assuming these will be the actual classes from your project
 from main.config_manager import ConfigManager, EnhancedConfig
 from main.model_manager import ModelManager
 from utils.local_llm_client import ModelResponse as LLMClientModelResponse # For type hinting
+from main.prompt_models import PromptContext # Assuming this is the structure from user
 
 logger = logging.getLogger(__name__)
 
-# Placeholder for Pydantic AI Agent base class
-# from pydantic_ai import Agent as PydanticAIAgentBase # Actual import
-class PydanticAIAgentBase(BaseModel): # Mock for now
-    pass
+# This will be a standard Python class, not inheriting from a pydantic-ai Agent base.
+# Pydantic BaseModel is used for its own configuration or internal states if any.
 
-class CodingRequestContext(BaseModel):
-    user_prompt: str
+class CodingTaskRequestContext(BaseModel):
+    """
+    Input context for a coding task request to the CodingDirector.
+    Designed to be compatible with or constructible from main.prompt_models.PromptContext.
+    """
+    user_id: str
+    conversation_id: str
+    user_prompt: str = Field(..., min_length=1)
     language: Optional[str] = None
-    project_context: Optional[Dict[str, Any]] = None
-    # Add other relevant context fields
 
-class CodingDirectorResponse(BaseModel):
+    # Fields from main.prompt_models.PromptContext that might be relevant
+    recent_history: List[str] = Field(default_factory=list)
+    retrieved_knowledge: List[str] = Field(default_factory=list)
+    recognized_patterns: List[str] = Field(default_factory=list)
+
+    # Additional specific context CodingDirector might use
+    project_root_path: Optional[str] = None
+    current_file_path: Optional[str] = None
+    selection_range: Optional[Dict[str, int]] = None # E.g., {"start_line": 10, "end_line": 15}
+
+    # Arbitrary additional context from the calling environment
+    extra_context_data: Dict[str, Any] = Field(default_factory=dict)
+
+    @classmethod
+    def from_prompt_context(cls, prompt_context: PromptContext, **kwargs):
+        """Helper to create CodingTaskRequestContext from an existing PromptContext."""
+        return cls(
+            user_id=prompt_context.user_id,
+            conversation_id=prompt_context.conversation_id,
+            user_prompt=prompt_context.feedback if prompt_context.feedback else "N/A", # Or raise if prompt is essential from PromptContext
+            recent_history=prompt_context.recent_history,
+            retrieved_knowledge=prompt_context.retrieved_knowledge,
+            recognized_patterns=prompt_context.recognized_patterns,
+            **kwargs # Allows overriding or adding other fields like language, project_root_path
+        )
+
+    @field_validator('language')
+    def language_must_be_sensible(cls, v: Optional[str]):
+        if v and not v.isalnum(): # Basic check
+            raise ValueError("Language should be alphanumeric if provided.")
+        return v
+
+
+class CodingDirectorFinalResult(BaseModel):
+    """
+    Represents the final structured result from the CodingDirector's processing.
+    This should be compatible with or transformable into main.prompt_models.PromptResult if needed,
+    though PromptResult seems more about a generated prompt than a final LLM answer.
+    """
     classification: Optional[str] = None
-    final_response: Optional[str] = None
+    llm_response_content: Optional[str] = None
     error_message: Optional[str] = None
-    model_used: Optional[str] = None # The final specialist model that gave the answer
-    full_model_response: Optional[LLMClientModelResponse] = None # If returning the rich object
 
-class CodingDirector(PydanticAIAgentBase):
+    # Details about the LLM call that produced the final_response_content
+    responding_model_id: Optional[str] = None # e.g., "deepseek-coder-v2:16b-lite-instruct"
+    responding_model_role: Optional[str] = None # e.g., "lead_developer"
+
+    # Optionally include the full rich response from LocalLLMClient for more details
+    full_llm_model_response: Optional[LLMClientModelResponse] = None
+
+    # Metadata about the director's process
+    request_context_used: CodingTaskRequestContext # Echo back the context for clarity
+    processing_time_seconds: Optional[float] = None
+
+    # If this result itself needs to be compatible with PromptResult structure:
+    # def to_prompt_result(self, original_prompt_context: PromptContext) -> 'PromptResult':
+    #     # This transformation depends on how PromptResult is used.
+    #     # If PromptResult.prompt is the *final answer*, then:
+    #     return PromptResult(
+    #         prompt=self.llm_response_content or self.error_message or "No response",
+    #         context=original_prompt_context, # Or a new context derived from request_context_used
+    #         notes=f"Processed by CodingDirector. Classification: {self.classification}. Model: {self.responding_model_id}",
+    #         score=None # Or some quality score if available
+    #     )
+
+
+class CodingDirector:
     """
     Main AI orchestrator for the Elite Coding Assistant.
     It uses Pydantic AI principles, classifies tasks, routes them to specialized models,
@@ -46,19 +108,34 @@ class CodingDirector(PydanticAIAgentBase):
         # Initialization of clients is handled by ModelManager's own init method now
         logger.info("CodingDirector initialized. Ensure ModelManager clients are initialized before processing.")
 
-    async def initialize(self):
-        """Initializes the underlying ModelManager's clients."""
-        if not self.model_manager.is_initialized:
-            logger.info("CodingDirector: Initializing ModelManager clients...")
-            await self.model_manager.initialize_clients()
-            self.is_initialized = self.model_manager.is_initialized
+    async def initialize(self) -> bool:
+        """
+        Initializes the underlying ModelManager's clients.
+        Returns True if initialization was successful or already done, False otherwise.
+        """
+        if not self.is_initialized: # Check own flag first
+            if not self.model_manager.is_initialized:
+                logger.info("CodingDirector: Initializing ModelManager clients...")
+                await self.model_manager.initialize_clients()
+
+            self.is_initialized = self.model_manager.is_initialized # Update own flag based on manager's
+
             if self.is_initialized:
                 logger.info("CodingDirector: ModelManager clients initialized successfully.")
             else:
                 logger.error("CodingDirector: Failed to initialize ModelManager clients.")
+        elif not self.model_manager.is_initialized:
+            # This case implies CodingDirector thought it was initialized, but ModelManager is not.
+            # Attempt re-initialization.
+            logger.warning("CodingDirector was marked initialized, but ModelManager is not. Re-initializing ModelManager.")
+            await self.model_manager.initialize_clients()
+            self.is_initialized = self.model_manager.is_initialized
+            if not self.is_initialized:
+                 logger.error("CodingDirector: Failed to re-initialize ModelManager clients.")
         else:
-            self.is_initialized = True
-            logger.info("CodingDirector: ModelManager clients were already initialized.")
+            # Already initialized
+            pass # logger.info("CodingDirector: ModelManager clients were already initialized.")
+        return self.is_initialized
 
 
     async def classify_task(self, user_prompt: str) -> Optional[str]:
@@ -97,86 +174,137 @@ class CodingDirector(PydanticAIAgentBase):
         system_prompt_override: Optional[str] = None
     ) -> Optional[LLMClientModelResponse]:
         """Helper to call a specialist model."""
-        if not self.is_initialized:
-            logger.error(f"CodingDirector not initialized. Cannot get response for role {role}.")
+        if not self.is_initialized: # Should have been ensured by process_request
+            logger.error(f"CodingDirector not initialized in _get_specialist_response for role {role}.")
             return None
 
-        # Construct a more detailed prompt for the specialist if needed
-        # For now, just passing the user_prompt. This can be enhanced.
-        specialist_prompt = context.user_prompt
+        # Construct a more detailed prompt for the specialist
+        prompt_parts = []
+        prompt_parts.append(f"User Request: {context.user_prompt}")
+
         if context.language:
-            specialist_prompt = f"Language: {context.language}\nRequest: {context.user_prompt}"
+            prompt_parts.append(f"Programming Language: {context.language}")
+        if context.current_file_path:
+            prompt_parts.append(f"Current File: {context.current_file_path}")
+        if context.project_root_path:
+            prompt_parts.append(f"Project Root: {context.project_root_path}")
+        if context.recent_history:
+            history_str = "\n".join([f"- {h}" for h in context.recent_history[-3:]]) # Last 3 history items
+            prompt_parts.append(f"Recent Conversation History:\n{history_str}")
+        if context.retrieved_knowledge:
+            knowledge_str = "\n".join([f"- {k}" for k in context.retrieved_knowledge[:2]]) # Top 2 knowledge items
+            prompt_parts.append(f"Relevant Retrieved Knowledge:\n{knowledge_str}")
+        if context.recognized_patterns:
+            patterns_str = ", ".join(context.recognized_patterns)
+            prompt_parts.append(f"Recognized Patterns: {patterns_str}")
+        if context.extra_context_data:
+            extra_str = json.dumps(context.extra_context_data, indent=2)
+            prompt_parts.append(f"Additional Context:\n{extra_str}")
 
-        # Add project context if available (this needs a strategy for how to format it)
-        # if context.project_context:
-        # specialist_prompt += f"\nProject Context: {json.dumps(context.project_context)}"
+        specialist_prompt = "\n\n".join(prompt_parts)
 
+        logger.info(f"Requesting completion from specialist role '{role}' with constructed prompt for user_prompt: '{context.user_prompt[:50]}...'")
 
-        logger.info(f"Requesting completion from specialist role '{role}' for prompt: '{context.user_prompt[:100]}...'")
+        # The system prompt for the role is handled by ModelManager when it calls LocalLLMClient
         response = await self.model_manager.get_completion_by_role(
             role=role,
-            prompt=specialist_prompt,
-            system_prompt_override=system_prompt_override
+            prompt=specialist_prompt, # This is the user-facing part of the prompt
+            system_prompt_override=system_prompt_override # CodingDirector can still override if needed for a specific step
         )
-        if response and isinstance(response, LLMClientModelResponse) and response.content.strip():
-            logger.info(f"Received response from {role}.")
+
+        if response and isinstance(response, LLMClientModelResponse) and response.content and response.content.strip():
+            logger.info(f"Received valid response from {role} (model: {response.model_name}).")
             return response
         else:
-            logger.warning(f"No valid response or empty content from {role}.")
+            if response and isinstance(response, LLMClientModelResponse) and (not response.content or not response.content.strip()):
+                logger.warning(f"Received empty or whitespace-only content from {role} (model: {response.model_name}).")
+            elif not response:
+                 logger.warning(f"No response object received from {role}.")
             return None
 
-    async def process_request(self, context: CodingRequestContext) -> CodingDirectorResponse:
+    async def process_request(self, context: CodingTaskRequestContext) -> CodingDirectorFinalResult:
         """
         Processes a coding assistance request:
-        1. Classifies the task.
-        2. Routes to the primary specialist.
-        3. Implements fallback logic if primary specialist fails.
+        1. Validates input context.
+        2. Ensures services are initialized.
+        3. Classifies the task.
+        4. Routes to the primary specialist.
+        5. Implements fallback logic if primary specialist fails.
+        6. Returns a structured result.
         """
-        if not self.is_initialized:
-            await self.initialize() # Attempt to initialize if not already
-            if not self.is_initialized:
-                return CodingDirectorResponse(error_message="CodingDirector and its ModelManager are not initialized.")
+        start_time = time.time()
+
+        # Input validation is implicitly handled by Pydantic if type hint is CodingTaskRequestContext
+        # but can add explicit validation if needed.
+        try:
+            CodingTaskRequestContext.model_validate(context) # Explicit validation
+        except Exception as e: # Catches Pydantic ValidationError
+            logger.error(f"Invalid request context: {e}")
+            return CodingDirectorFinalResult(
+                request_context_used=context, # Echo invalid context
+                error_message=f"Invalid request context: {e}",
+                processing_time_seconds=time.time() - start_time
+            )
+
+        if not await self.initialize(): # Ensures ModelManager and its clients are ready
+            return CodingDirectorFinalResult(
+                request_context_used=context,
+                error_message="CodingDirector services could not be initialized.",
+                processing_time_seconds=time.time() - start_time
+            )
 
         classification = await self.classify_task(context.user_prompt)
-        if not classification:
-            return CodingDirectorResponse(classification="unknown", error_message="Task classification failed.")
+        # classify_task already defaults to "general" on failure, so classification should always be a string.
 
         primary_role_map = {
             "math": "math_specialist",
             "general": "lead_developer"
         }
-        primary_role = primary_role_map.get(classification, "lead_developer")
+        # If classification is None (e.g. router totally failed and returned None), default to general
+        primary_role = primary_role_map.get(classification or "general", "lead_developer")
 
-        response_model: Optional[LLMClientModelResponse] = None
+        final_llm_response: Optional[LLMClientModelResponse] = None
+        final_role_used: Optional[str] = None
 
-        # Attempt 1: Primary Specialist
-        logger.info(f"Attempting primary specialist: {primary_role}")
-        response_model = await self._get_specialist_response(primary_role, context)
+        # Fallback chain
+        roles_to_try = [
+            primary_role,
+            "senior_developer",
+            "principal_architect"
+        ]
+        # Ensure no duplicate roles if primary_role is one of the fallbacks
+        unique_roles_to_try = []
+        for r in roles_to_try:
+            if r not in unique_roles_to_try:
+                unique_roles_to_try.append(r)
 
-        # Attempt 2: Senior Developer (Fallback for general tasks or if primary failed)
-        if not response_model:
-            fallback_role_1 = "senior_developer"
-            logger.warning(f"Primary specialist {primary_role} failed or gave empty response. Trying fallback: {fallback_role_1}")
-            response_model = await self._get_specialist_response(fallback_role_1, context)
+        for role_attempt in unique_roles_to_try:
+            logger.info(f"Attempting specialist: {role_attempt}")
+            final_llm_response = await self._get_specialist_response(role_attempt, context)
+            if final_llm_response:
+                final_role_used = role_attempt
+                break # Success
 
-        # Attempt 3: Principal Architect (Final Fallback for any task if others failed)
-        if not response_model:
-            fallback_role_2 = "principal_architect"
-            logger.warning(f"Fallback {fallback_role_1} also failed or gave empty response. Trying final fallback: {fallback_role_2}")
-            response_model = await self._get_specialist_response(fallback_role_2, context)
+        processing_time = time.time() - start_time
 
-        if response_model:
-            return CodingDirectorResponse(
+        if final_llm_response:
+            return CodingDirectorFinalResult(
                 classification=classification,
-                final_response=response_model.content,
-                model_used=response_model.model_name, # This is the Ollama model_id
-                full_model_response=response_model
+                llm_response_content=final_llm_response.content,
+                responding_model_id=final_llm_response.model_name,
+                responding_model_role=final_role_used or final_llm_response.role.value, # Use role from response if available
+                full_llm_model_response=final_llm_response,
+                request_context_used=context,
+                processing_time_seconds=processing_time
             )
         else:
-            logger.error(f"All models failed to provide a response for prompt: '{context.user_prompt[:100]}...'")
-            return CodingDirectorResponse(
+            error_msg = f"All models in the chain ({', '.join(unique_roles_to_try)}) failed to provide a response for prompt: '{context.user_prompt[:100]}...'"
+            logger.error(error_msg)
+            return CodingDirectorFinalResult(
                 classification=classification,
-                error_message="All specialist models failed to provide a response."
+                error_message=error_msg,
+                request_context_used=context,
+                processing_time_seconds=processing_time
             )
 
 # --- Example Usage ---

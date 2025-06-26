@@ -39,6 +39,7 @@ flowchart TD
     TESTS_UNIT_DIR --> test_config_mgr["test_config_manager.py"]
     TESTS_UNIT_DIR --> test_model_mgr["test_model_manager.py"]
     TESTS_UNIT_DIR --> test_coding_dir["test_coding_director.py"]
+    TESTS_UNIT_DIR --> test_local_llm_cli["test_local_llm_client.py"]
     TESTS --> tests_init["__init__.py"] # tests/__init__.py already listed
     SCRIPTS --> enhanced_setup["enhanced_setup.sh"]
     SCRIPTS --> setup["setup.sh"]

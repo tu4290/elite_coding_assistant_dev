@@ -98,7 +98,8 @@ class ModelManager:
         # Performance parameters: kwargs > config > default (LocalLLMClient handles its defaults)
         temperature = kwargs.get('temperature', model_cfg.performance.temperature)
         max_tokens = kwargs.get('max_tokens', model_cfg.performance.max_tokens)
-        # TODO: Add other performance params like top_p, top_k from model_cfg.performance if LocalLLMClient supports them directly
+        # Pass all relevant performance parameters
+        performance_params = model_cfg.performance
 
         try:
             logger.debug(f"Requesting completion from model '{model_cfg.model_id}' for role '{role}'.")
@@ -106,10 +107,14 @@ class ModelManager:
                 model_name=model_cfg.model_id,
                 prompt=prompt,
                 system_prompt=final_system_prompt,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stream=stream
-                # Pass other relevant options from model_cfg.performance if supported by LocalLLMClient
+                temperature=temperature, # This uses the override or model_cfg's temp
+                max_tokens=max_tokens,   # This uses the override or model_cfg's max_tokens
+                stream=stream,
+                # Pass other parameters from the model's performance config
+                top_p=kwargs.get('top_p', performance_params.top_p),
+                top_k=kwargs.get('top_k', performance_params.top_k),
+                repeat_penalty=kwargs.get('repeat_penalty', performance_params.repeat_penalty)
+                # context_length is usually a load-time param, but LocalLLMClient sets num_ctx from its internal model_config_internal
             )
             return response
         except ValueError as ve: # e.g. model unknown or disabled by LocalLLMClient
@@ -140,38 +145,36 @@ class ModelManager:
         # This part needs refinement based on how embedding models are configured.
         # Let's assume there's a configured default or the client handles it.
         # This is a placeholder for actual embedding model selection logic.
+        # A more robust solution would involve a dedicated configuration for embedding models
+        # or a specific role like "embedding_generator".
+        # For now, if a model_name is passed, use it. Otherwise, try a system default.
+
         embedding_model_id_to_use = model_name
         if not embedding_model_id_to_use:
-             # Try to find a model configured for embeddings or a general-purpose one
-             # This is a simplification. A dedicated embedding model config would be better.
-            embedding_cfg = self.models_config.get_model_config_by_role("router") # Fallback, not ideal
-            if embedding_cfg:
-                embedding_model_id_to_use = embedding_cfg.model_id
-            else:
-                logger.error("No default embedding model specified or found.")
-                return None
+            # Attempt to get a default embedding model from system config if defined
+            # Example: self.config.system.default_embedding_model_id
+            # For now, let's hardcode a common one or rely on LocalLLMClient's potential default
+            # This should be improved with proper configuration.
+            default_ollama_embedding_model = "nomic-embed-text" # A common Ollama embedding model
+            logger.warning(f"No specific embedding model name provided. Using default: {default_ollama_embedding_model}")
+            embedding_model_id_to_use = default_ollama_embedding_model
+            # We should also verify if this default model is listed in self.models_config
+            # or if LocalLLMClient can handle arbitrary model_ids for embeddings.
+            # The current LocalLLMClient.generate_embeddings_ollama doesn't check against self.models
 
-        logger.info(f"Requesting embeddings for {len(texts)} texts using model {embedding_model_id_to_use}")
+        if not embedding_model_id_to_use: # Still no model ID
+            logger.error("No embedding model could be determined.")
+            return None
+
+        logger.info(f"Requesting embeddings for {len(texts)} texts using model '{embedding_model_id_to_use}'")
         try:
-            # Assuming LocalLLMClient is extended or adapted to handle an 'embeddings' endpoint for Ollama
-            # or it routes to an appropriate specialized client (e.g. SentenceTransformer client)
-            # The current LocalLLMClient doesn't have a direct get_embeddings method.
-            # This indicates a need to enhance LocalLLMClient or how ModelManager uses it for embeddings.
-
-            # If ollama python client supports embeddings directly:
-            # return await self.local_llm_client.client.embeddings(model=embedding_model_id_to_use, prompts=texts)
-
-            # For now, if DocumentIngestionSystem calls this, its mock for ModelManager.get_embeddings
-            # will be used. This real implementation needs LocalLLMClient to support it.
-            # This is a placeholder, as LocalLLMClient needs an embedding method.
-            logger.warning(f"ModelManager.get_embeddings called, but LocalLLMClient needs an actual embedding method. Using placeholder logic.")
-            if hasattr(self.local_llm_client, 'generate_embeddings_ollama'): # Hypothetical method
-                 return await self.local_llm_client.generate_embeddings_ollama(model_name=embedding_model_id_to_use, texts=texts) # type: ignore
-            else: # Fallback to a very basic mock if the method doesn't exist
-                 return [[0.01 * i for i in range(10)] for _ in texts] # Placeholder
-
+            # Now LocalLLMClient has generate_embeddings_ollama
+            return await self.local_llm_client.generate_embeddings_ollama(
+                model_name=embedding_model_id_to_use,
+                texts=texts
+            )
         except Exception as e:
-            logger.exception(f"Error generating embeddings: {e}")
+            logger.exception(f"Error generating embeddings via ModelManager using {embedding_model_id_to_use}: {e}")
             return None
 
     async def health_check_models(self) -> Dict[str, Any]:
