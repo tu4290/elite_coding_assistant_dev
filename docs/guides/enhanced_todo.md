@@ -30,7 +30,7 @@
 - [x] Create adaptive behavior systems
 
 ## Phase 5: Create training interfaces and knowledge ingestion tools
-- [x] Build document ingestion system (including integration with a basic KnowledgeManagerAgent)
+- [ ] Build document ingestion system
 - [ ] Create interactive training interface
 - [ ] Implement knowledge validation
 - [ ] Add learning material processing

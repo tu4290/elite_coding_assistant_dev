@@ -132,65 +132,45 @@ class LocalLLMClient:
         self.is_connected = False
         self.last_health_check = None
         
-        # Load model configurations
-        self._load_model_configs()
+        # Model configurations will be primed by ModelManager
+        # self._load_model_configs() # This will be replaced
         
-        # Initialize performance tracking
-        self._initialize_performance_tracking()
+        # Initialize performance tracking - can be done after models are primed
+        # self._initialize_performance_tracking() # Call this in prime_model_configurations
     
-    def _load_model_configs(self):
-        """Load model configurations from config."""
-        model_configs = {
-            "openhermes:7b": ModelConfig(
-                name="openhermes:7b",
-                role=ModelRole.ROUTER,
-                timeout=30,
-                temperature=0.3,
-                max_tokens=2048
-            ),
-            "mathstral:7b": ModelConfig(
-                name="mathstral:7b",
-                role=ModelRole.QUANTITATIVE_SPECIALIST,
-                timeout=45,
-                temperature=0.2,
-                max_tokens=4096
-            ),
-            "deepseek-coder-v2:16b-lite-instruct": ModelConfig(
-                name="deepseek-coder-v2:16b-lite-instruct",
-                role=ModelRole.LEAD_DEVELOPER,
-                timeout=60,
-                temperature=0.4,
-                max_tokens=8192
-            ),
-            "codellama:13b": ModelConfig(
-                name="codellama:13b",
-                role=ModelRole.SENIOR_DEVELOPER,
-                timeout=45,
-                temperature=0.3,
-                max_tokens=4096
-            ),
-            "wizardcoder:13b-python": ModelConfig(
-                name="wizardcoder:13b-python",
-                role=ModelRole.PRINCIPAL_ARCHITECT,
-                timeout=60,
-                temperature=0.5,
-                max_tokens=8192
+    async def prime_model_configurations(self, configured_models: List[Any]): # List[IndividualModelConfig] from config_manager
+        """
+        Sets up the model configurations based on what's passed from ModelManager.
+        This replaces the old _load_model_configs.
+        """
+        self.models.clear() # Clear any existing models
+        self.performance_metrics.clear()
+
+        for ext_config in configured_models:
+            # Assuming ext_config is an instance of IndividualModelConfig (or a compatible dict)
+            # Convert role string from IndividualModelConfig to ModelRole enum
+            try:
+                role_enum = ModelRole(ext_config.role)
+            except ValueError:
+                self.logger.error(f"Invalid role '{ext_config.role}' for model '{ext_config.model_id}'. Skipping.")
+                continue
+
+            model_cfg = ModelConfig(
+                name=ext_config.model_id, # Use model_id from config as the key/name
+                role=role_enum,
+                timeout=ext_config.performance.timeout if hasattr(ext_config.performance, 'timeout') else 30, # Add timeout to ModelPerformanceConfig if needed
+                temperature=ext_config.performance.temperature,
+                max_tokens=ext_config.performance.max_tokens,
+                context_window=ext_config.performance.context_length if hasattr(ext_config.performance, 'context_length') else 4096,
+                enabled=ext_config.enabled
             )
-        }
+            self.models[ext_config.model_id] = model_cfg
         
-        # Override with config values if available
-        for model_name, model_config in model_configs.items():
-            config_key = model_name.split(':')[0].replace('-', '_')
-            if hasattr(self.config, f'{config_key}_config'):
-                config_data = getattr(self.config, f'{config_key}_config', {})
-                for key, value in config_data.items():
-                    if hasattr(model_config, key):
-                        setattr(model_config, key, value)
-            
-            self.models[model_name] = model_config
-    
+        self._initialize_performance_tracking() # Now initialize metrics for these models
+        self.logger.info(f"LocalLLMClient primed with {len(self.models)} model configurations.")
+
     def _initialize_performance_tracking(self):
-        """Initialize performance tracking for all models."""
+        """Initialize performance tracking for all currently configured models."""
         for model_name in self.models.keys():
             self.performance_metrics[model_name] = ModelPerformanceMetrics(
                 model_name=model_name

@@ -127,64 +127,80 @@ Infrastructure:
 
 ### Core Components
 
-#### 1. Coding Director (`main/coding_director.py`)
+#### 1. Configuration Manager (`main/config_manager.py`)
 
-**Purpose**: Main orchestrator that coordinates all system components
+**Purpose**: Loads, validates, and provides access to system and model configurations.
 
-**Key Classes**:
+**Key Classes & Functionality**:
+- `ConfigManager`: Loads `config/system.json` and `config/models.json`.
+- `SystemConfig` (Pydantic Model): Defines structure for system settings (logging, Ollama URL, etc.). Includes `ollama_base_url` property.
+- `ModelsConfig`, `IndividualModelConfig`, `ModelPerformanceConfig` (Pydantic Models): Define structure for model definitions, roles, system prompts, and performance parameters.
+- Provides methods to retrieve the entire configuration object (`EnhancedConfig`) or specific parts (system config, specific model config by role).
+- Handles Pydantic validation of configuration files.
+
+**Implementation Highlights**:
 ```python
-class CodingDirector(BaseAgent):
-    """Main AI orchestrator using Pydantic AI framework"""
-    
-    def __init__(self, config: ConfigManager):
-        self.model_manager = ModelManager(config)
-        self.conversation_memory = ConversationMemory()
-        self.learning_orchestrator = LearningOrchestrator()
-        self.prompt_engineer = PromptEngineeringAgent()
-    
-    async def process_request(self, request: CodingRequest) -> CodingResponse:
-        """Process coding assistance request with learning integration"""
-        
-    async def learn_from_interaction(self, interaction: Interaction) -> None:
-        """Learn from user interaction for continuous improvement"""
-        
-    async def get_suggestions(self, context: CodeContext) -> List[Suggestion]:
-        """Generate context-aware code suggestions"""
+class ConfigManager:
+    def __init__(self, system_config_path: Path, models_config_path: Path): # ...
+    def load_config(self) -> EnhancedConfig: # ...
+    # ... other getter methods
 ```
-
-**Responsibilities**:
-- Request routing and orchestration
-- Model selection and management
-- Learning integration
-- Response generation and formatting
 
 #### 2. Model Manager (`main/model_manager.py`)
 
-**Purpose**: Manages AI model lifecycle and interactions
+**Purpose**: Manages interactions with LLMs, primarily by orchestrating `LocalLLMClient` based on loaded configurations.
 
-**Key Classes**:
+**Key Classes & Functionality**:
+- `ModelManager`:
+    - Initializes with `EnhancedConfig` (from `ConfigManager`).
+    - Instantiates `LocalLLMClient`, providing it with system configurations (like Ollama URL).
+    - `initialize_clients()`: Asynchronously connects `LocalLLMClient` and primes it with model definitions derived from `config/models.json` (via `LocalLLMClient.prime_model_configurations`).
+    - `get_completion_by_role(role: str, prompt: str, ...)`: Core method to request LLM completions. It identifies the correct Ollama model ID and parameters for the given role from its configuration and calls `LocalLLMClient.generate_response()`. Supports streaming.
+    - `get_embeddings(...)`: Placeholder for future embedding generation.
+    - `health_check_models()`: Delegates to `LocalLLMClient` for health status.
+
+**Implementation Highlights**:
 ```python
 class ModelManager:
-    """Manages multiple AI models and their configurations"""
-    
-    def __init__(self, config: ConfigManager):
-        self.models: Dict[str, BaseModel] = {}
-        self.load_models(config.models)
-    
-    async def get_completion(self, prompt: str, model_name: str = None) -> str:
-        """Get completion from specified or default model"""
-        
-    async def get_embeddings(self, text: str) -> List[float]:
-        """Generate embeddings for semantic similarity"""
-        
-    def health_check(self) -> Dict[str, bool]:
-        """Check health status of all models"""
+    def __init__(self, config: EnhancedConfig): # ...
+    async def initialize_clients(self): # ...
+    async def get_completion_by_role(self, role: str, prompt: str, ...) -> ...: # ...
 ```
 
-**Supported Models**:
-- **Local Models**: Ollama (Llama 2, CodeLlama, Mistral)
-- **Cloud Models**: OpenAI GPT-4, Anthropic Claude
-- **Embedding Models**: Sentence-BERT, OpenAI embeddings
+#### 3. Coding Director (`main/coding_director.py`)
+
+**Purpose**: Main AI orchestrator, likely a Pydantic AI agent, that uses `ModelManager` to classify tasks and route them to appropriate specialist LLMs.
+
+**Key Classes & Functionality**:
+- `CodingDirector`:
+    - Initializes with `ConfigManager` and `ModelManager`.
+    - `initialize()`: Ensures `ModelManager` (and its clients) are initialized.
+    - `classify_task(user_prompt: str)`: Uses the "router" model (via `ModelManager`) to determine if a task is "math" or "general".
+    - `process_request(context: CodingRequestContext)`:
+        - Orchestrates the overall response generation.
+        - Calls `classify_task`.
+        - Routes the request to a primary specialist LLM (e.g., "math_specialist" or "lead_developer") through `ModelManager`.
+        - Implements a fallback strategy: if the primary model fails or returns an unsatisfactory response, it tries "senior_developer", then "principal_architect".
+        - Returns a structured `CodingDirectorResponse`.
+
+**Implementation Highlights**:
+```python
+class CodingDirector(PydanticAIAgentBase): # Conceptual base
+    def __init__(self, config_manager: ConfigManager, model_manager: ModelManager, ...): # ...
+    async def process_request(self, context: CodingRequestContext) -> CodingDirectorResponse: # ...
+```
+
+#### 3.1. Local LLM Client (`utils/local_llm_client.py`)
+*(Note: This is a utility but crucial for ModelManager)*
+
+**Purpose**: Provides a direct interface to the Ollama API for local LLM interactions.
+
+**Key Functionality**:
+- Uses `ollama.AsyncClient` for communication.
+- `prime_model_configurations()`: Method called by `ModelManager` to dynamically load model definitions (ID, role, performance params) that were originally read from `config/models.json`. This replaces previous hardcoded configurations.
+- `generate_response()`: Sends requests to the specified Ollama model (e.g., `openhermes:7b`) with appropriate system prompts, user prompts, and performance parameters. Supports streaming and non-streaming.
+- Manages performance metrics (requests, success/failure, response times, tokens/sec) for each configured model.
+- Includes `connect()` for initial connection and model verification against Ollama, and `health_check()`.
 
 #### 3. Recursive Learning Engine (`main/recursive_learning_engine.py`)
 

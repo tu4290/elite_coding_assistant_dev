@@ -1,7 +1,7 @@
 {
   "router": {
     "name": "Project Manager",
-    "model_id": "openhermes:latest",
+    "model_id": "openhermes:7b",
     "role": "router",
     "system_prompt": "You are a task classification specialist for a coding assistant team. \nYour job is to analyze incoming prompts and classify them as either:\n- 'math': Mathematical calculations, algorithms, statistical analysis, performance optimization\n- 'general': Standard coding, web development, software engineering, debugging\n\nRespond with only the classification word: 'math' or 'general'",
     "priority": 1,

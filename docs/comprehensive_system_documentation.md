@@ -95,37 +95,75 @@ graph TB
 
 ### Phase 1: Research and Architecture
 
-#### 1.1 Pydantic AI Framework Integration
-**Location**: `main/coding_director.py`
+#### 1.1 Configuration Management
+**Location**: `main/config_manager.py`
 
 **Key Features**:
-- Multi-agent orchestration with Pydantic AI
-- Type-safe AI model interactions
-- Advanced prompt engineering capabilities
-- Context-aware response generation
+- Loads system and model configurations from JSON files (e.g., `config/system.json`, `config/models.json`).
+- Uses Pydantic models for configuration validation and type-safe access.
+- Provides `ConfigManager` class to centralize configuration access.
+- Computes derived configuration values (e.g., full Ollama base URL).
 
 **Implementation Highlights**:
 ```python
-class CodingDirector(BaseAgent):
-    """Main AI orchestrator using Pydantic AI framework"""
-    
-    def __init__(self, config: ConfigManager):
-        self.model_manager = ModelManager(config)
-        self.conversation_memory = ConversationMemory()
-        self.prompt_engineer = PromptEngineeringAgent()
-    
-    async def process_request(self, request: CodingRequest) -> CodingResponse:
-        # Advanced request processing with learning integration
-        pass
+class ConfigManager:
+    def __init__(self, system_config_path: Path, models_config_path: Path): # ...
+    def load_config(self) -> EnhancedConfig: # ...
+    def get_config(self) -> EnhancedConfig: # ...
+    def get_model_config(self, role_name: str) -> Optional[IndividualModelConfig]: # ...
 ```
 
-#### 1.2 Multi-Model Support
+#### 1.2 Model Management
 **Location**: `main/model_manager.py`
 
-**Supported Models**:
-- **Local Models**: Ollama integration (Llama 2, CodeLlama, Mistral)
-- **Cloud Models**: OpenAI GPT-4, Anthropic Claude
-- **Specialized Models**: Code-specific fine-tuned models
+**Key Features**:
+- Initializes and manages `LocalLLMClient` for Ollama interactions.
+- Takes loaded `EnhancedConfig` (from `ConfigManager`) to configure itself and `LocalLLMClient`.
+- Dynamically configures `LocalLLMClient` with model definitions from `config/models.json`.
+- Provides `get_completion_by_role()` to request completions from specific LLM roles (router, lead_developer, etc.), applying role-specific system prompts and parameters.
+- Supports streaming and non-streaming responses.
+- Includes methods for health checks and placeholder for embedding generation.
+
+**Implementation Highlights**:
+```python
+class ModelManager:
+    def __init__(self, config: EnhancedConfig): # ...
+    async def initialize_clients(self): # Connects LocalLLMClient
+    async def get_completion_by_role(self, role: str, prompt: str, ...) -> Union[LLMClientModelResponse, AsyncGenerator[str, None], None]: # ...
+```
+
+#### 1.3 Coding Director (Orchestrator)
+**Location**: `main/coding_director.py` (Pydantic AI Agent)
+
+**Key Features**:
+- Main AI orchestrator, coordinating `ModelManager` and other services.
+- Initializes with `ConfigManager` and `ModelManager`.
+- `process_request()`:
+    - Classifies incoming user prompts using the "router" LLM (via `ModelManager`).
+    - Routes requests to specialized LLMs ("math_specialist", "lead_developer") based on classification.
+    - Implements a fallback chain (e.g., to "senior_developer", then "principal_architect") if primary specialists fail.
+- Handles response aggregation and error management.
+
+**Implementation Highlights**:
+```python
+class CodingDirector(PydanticAIAgentBase): # (conceptual base class)
+    def __init__(self, config_manager: ConfigManager, model_manager: ModelManager, ...): # ...
+    async def initialize(self): # Initializes ModelManager
+    async def classify_task(self, user_prompt: str) -> Optional[str]: # ...
+    async def process_request(self, context: CodingRequestContext) -> CodingDirectorResponse: # ...
+```
+
+#### 1.4 Local LLM Client
+**Location**: `utils/local_llm_client.py`
+
+**Key Features**:
+- Direct interface with the Ollama API using `ollama.AsyncClient`.
+- Dynamically configured by `ModelManager` with model definitions from `config/models.json` (via `prime_model_configurations` method).
+- `generate_response()` method handles sending requests to specified Ollama models with appropriate parameters (temperature, max_tokens, system prompts).
+- Supports both streaming and non-streaming responses.
+- Tracks performance metrics per model (requests, success/failure, response times).
+- Includes health checking and model availability verification.
+
 
 ### Phase 2: Core AI Implementation
 
@@ -137,15 +175,6 @@ class CodingDirector(BaseAgent):
 - Real-time feedback collection
 - Session management and history
 - Advanced configuration options
-
-#### 2.2 Configuration Management
-**Location**: `main/config_manager.py`
-
-**Capabilities**:
-- Environment-specific configurations
-- Dynamic configuration updates
-- Validation and type safety
-- Secrets management
 
 ### Phase 3: Learning and Knowledge Systems
 
@@ -215,36 +244,11 @@ class CodingDirector(BaseAgent):
 #### 5.1 Document Ingestion System
 **Location**: `main/document_ingestion_system.py`
 
-The Document Ingestion System is responsible for processing various document formats, extracting their content and metadata, preparing this data for semantic understanding, and storing it in the knowledge base. This system is a crucial part of Phase 5, enabling the assistant to learn from provided documents. It is primarily used internally by the `KnowledgeManagerAgent`.
-
 **Processing Capabilities**:
-- **Multi-format Support**: Handles PDF, DOCX, Markdown, Text, HTML, and common source code files (e.g., Python, JSON, YAML). It can ingest documents from local file paths, URLs, or direct byte content.
-- **Intelligent Extraction**: Parses documents to extract raw textual content. It also extracts available metadata such as title, author, creation/modification dates, and source filename.
-- **Content Chunking**: Divides the extracted text into smaller, semantically meaningful chunks. This is essential for effective embedding generation and targeted information retrieval. Uses `langchain.text_splitter` for robust chunking.
-- **Embedding Generation**: For each content chunk, vector embeddings are generated using models specified by the `ModelManager`. These embeddings enable semantic search capabilities within the knowledge base.
-- **Quality Validation**: Performs a basic assessment of the extracted content's quality, providing a score and identifying potential issues (e.g., empty content, non-chunkable text).
-- **Batch Processing**: Capable of efficiently processing multiple documents concurrently using asynchronous operations.
-- **Knowledge Base Integration**: Stores records of processed documents (e.g., in a `processed_documents` table) and the embedded content chunks (in the `knowledge_base` table) via the `SupabaseLearningClient`. This makes the ingested information accessible to other AI agents and learning mechanisms.
-- **Status Tracking**: Records the status (e.g., success, failure, partial success) and any errors for each ingestion attempt in the `processed_documents` table.
-
-The Pydantic models for data structures used by this system (like `DocumentSource`, `ProcessingResult`, `KnowledgeBaseEntry`) are defined in `main/models/document_processing.py`.
-
-#### 5.1.1 Knowledge Manager Agent
-**Location**: `main/agents/knowledge_manager_agent.py`
-
-The `KnowledgeManagerAgent` is a Pydantic AI-style agent responsible for overseeing the knowledge lifecycle within the Elite Coding Assistant. It orchestrates the ingestion of new information, manages the knowledge base, and will eventually provide interfaces for knowledge retrieval and validation.
-
-**Key Responsibilities and Features**:
-- **Document Ingestion Orchestration**: Utilizes the `DocumentIngestionSystem` to process and ingest documents from various sources (files, URLs, raw content). It exposes methods like `ingest_document_from_source` and `ingest_multiple_documents`.
-- **Interface to Knowledge Base**: Acts as the primary interface for adding new, structured information (derived from documents) into the Supabase `knowledge_base` and `processed_documents` tables.
-- **Dependency Management**: Takes necessary components like the `DocumentIngestionSystem` as dependencies, allowing for a modular and testable design.
-- **Future Capabilities (placeholder)**:
-    - Semantic search and retrieval from the knowledge base.
-    - Knowledge validation workflows.
-    - Management of knowledge item lifecycle (updates, archival).
-    - Integration with other agents that need to query or update knowledge.
-
-This agent is a key part of the "Knowledge Management Layer" and works closely with the `DocumentIngestionSystem` and `SupabaseLearningClient`.
+- **Multi-format Support**: PDF, DOCX, Markdown, Text, HTML
+- **Intelligent Extraction**: Content parsing with metadata
+- **Batch Processing**: Efficient bulk document handling
+- **Quality Validation**: Content quality assessment
 
 #### 5.2 Interactive Training Interface
 **Location**: `main/interactive_training_interface.py`
