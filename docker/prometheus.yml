@@ -1,0 +1,126 @@
+# Prometheus configuration for Elite Coding Assistant Real-Time Features
+# Monitors system metrics, application performance, and real-time feature health
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'eca-realtime-monitor'
+    environment: 'development'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Real-time API server
+  - job_name: 'realtime-api'
+    static_configs:
+      - targets: ['realtime-server:8001']
+    scrape_interval: 10s
+    metrics_path: /metrics
+    scrape_timeout: 5s
+    honor_labels: true
+    params:
+      format: ['prometheus']
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 5s
+
+  # Nginx metrics (if nginx-prometheus-exporter is used)
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:9113']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 5s
+
+  # Node exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scrape_timeout: 5s
+
+  # WebSocket connection metrics
+  - job_name: 'websocket-metrics'
+    static_configs:
+      - targets: ['realtime-server:8001']
+    scrape_interval: 5s
+    metrics_path: /ws/metrics
+    scrape_timeout: 3s
+    params:
+      format: ['prometheus']
+
+  # Custom application metrics
+  - job_name: 'eca-app-metrics'
+    static_configs:
+      - targets: ['realtime-server:8001']
+    scrape_interval: 10s
+    metrics_path: /api/metrics/prometheus
+    scrape_timeout: 5s
+    honor_labels: true
+
+# Remote write configuration (for long-term storage)
+# remote_write:
+#   - url: "http://remote-storage:9201/write"
+#     queue_config:
+#       max_samples_per_send: 1000
+#       max_shards: 200
+#       capacity: 2500
+
+# Remote read configuration
+# remote_read:
+#   - url: "http://remote-storage:9201/read"
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus/data
+    retention.time: 15d
+    retention.size: 10GB
+    wal-compression: true
+
+# Web configuration
+web:
+  console.libraries: /etc/prometheus/console_libraries
+  console.templates: /etc/prometheus/consoles
+  enable-lifecycle: true
+  enable-admin-api: true
+  max-connections: 512
+  read-timeout: 30s
+  route-prefix: /
+
+# Tracing configuration
+tracing:
+  # endpoint: "jaeger:14268/api/traces"
+  # sampling_fraction: 0.1
+
+# Feature flags
+feature_flags:
+  - name: "promql-at-modifier"
+    enabled: true
+  - name: "promql-negative-offset"
+    enabled: true

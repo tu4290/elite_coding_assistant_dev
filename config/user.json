@@ -1,0 +1,13 @@
+{
+  "preferred_language": "python",
+  "code_style": "pep8",
+  "explanation_level": "detailed",
+  "include_comments": true,
+  "include_tests": false,
+  "preferred_frameworks": [
+    "flask",
+    "fastapi",
+    "django"
+  ],
+  "custom_prompts": {}
+}

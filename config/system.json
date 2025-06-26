@@ -1,0 +1,10 @@
+{
+  "log_level": "INFO",
+  "log_file": "elite_coding_assistant.log",
+  "max_concurrent_requests": 3,
+  "request_timeout": 300,
+  "enable_metrics": true,
+  "metrics_file": "metrics.json",
+  "ollama_host": "localhost",
+  "ollama_port": 11434
+}

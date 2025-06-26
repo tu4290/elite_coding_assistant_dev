@@ -1,0 +1,36 @@
+{
+  "servers": {
+    "time": {
+      "command": "uvx",
+      "args": ["mcp-server-time"]
+    },
+    "taskmanager": {
+      "command": "uvx",
+      "args": ["mcp-taskmanager"]
+    },
+    "memory": {
+      "command": "uvx",
+      "args": ["mcp-memory"]
+    },
+    "sequential-thinking": {
+      "command": "uvx",
+      "args": ["mcp-sequential-thinking"]
+    },
+    "knowledge-graph": {
+      "command": "uvx",
+      "args": ["mcp-knowledge-graph"]
+    },
+    "puppeteer": {
+      "command": "uvx",
+      "args": ["mcp-puppeteer"]
+    },
+    "brave-search": {
+      "command": "uvx",
+      "args": ["mcp-brave-search"]
+    },
+    "context7": {
+      "command": "uvx",
+      "args": ["mcp-context7"]
+    }
+  }
+}
