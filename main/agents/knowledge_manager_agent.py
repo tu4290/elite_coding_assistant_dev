@@ -1,158 +1,175 @@
 import logging
-from typing import List, Optional, Type
+import os
+from typing import List, Optional, Any
 
 from pydantic import BaseModel, Field
-# from pydantic_ai import Agent # Assuming pydantic_ai.Agent is the base
-# For now, using a simple BaseModel as Agent placeholder if pydantic_ai is not fully set up
-# In a real Pydantic AI setup, this would inherit from pydantic_ai.Agent
 
-from main.document_ingestion_system import DocumentIngestionSystem, SupabaseLearningClient, ModelManager
-from main.models.document_processing import DocumentSource, ProcessingResult, KnowledgeBaseEntry
+# Assuming these are the actual paths after project structuring
+from main.document_ingestion_system import DocumentIngestionSystem
+from main.models.document_processing import DocumentSource, ProcessingResult, ProcessingStatus
+from main.supabase_learning_client import SupabaseLearningClient # Actual import
+from main.model_manager import ModelManager # Actual import
 
 logger = logging.getLogger(__name__)
 
-# Placeholder for Pydantic AI Agent - replace with actual import if available
-class Agent(BaseModel):
-    # This is a mock Agent. In a real Pydantic AI setup,
-    # this would come from `from pydantic_ai import Agent`
-    # and would have its own methods for execution, system prompts, etc.
-    # For this integration, we'll focus on the direct method call.
+# This is a conceptual placeholder for pydantic_ai.Agent.
+# If pydantic_ai is installed and has a base Agent class, it should be used.
+# For now, this allows type hinting and basic structure.
+class PydanticAIAgentBase(BaseModel):
+    # Mocking some attributes/methods an agent might have
+    # llm_client: Any = Field(default=None, exclude=True) # Example: if agent uses an LLM
+
+    # In a real Pydantic AI Agent, initialization and execution logic would be more complex.
+    # This is simplified to focus on the DocumentIngestionSystem integration.
     pass
 
 
-# Define dependencies for the KnowledgeManagerAgent, as suggested by Pydantic AI patterns
 class KnowledgeManagerDependencies(BaseModel):
     document_ingestion_system: DocumentIngestionSystem
-    # Potentially supabase_client directly if needed for retrieval,
-    # but ingestion system already has it.
-    # supabase_client: SupabaseLearningClient
+    # supabase_client: SupabaseLearningClient # DIS already has it
+    # model_manager: ModelManager # DIS already has it
 
 
-class KnowledgeManagerAgent(Agent):
+class KnowledgeManagerAgent(PydanticAIAgentBase):
     """
-    Pydantic AI Agent responsible for managing the knowledge base,
-    including ingestion of new documents and retrieval of information.
+    Agent responsible for managing the knowledge base.
+    Handles ingestion of new documents via DocumentIngestionSystem and
+    will eventually handle retrieval, validation, etc.
     """
-    # In a real Pydantic AI setup, dependencies might be injected or configured.
-    # For now, we'll initialize them directly or pass them.
+    dependencies: KnowledgeManagerDependencies
 
-    # system_prompt: str = Field(default="You are an expert Knowledge Manager. Your role is to ingest, validate, and organize information into the knowledge base, and provide methods for efficient retrieval.")
-
-    # This would be properly handled by Pydantic AI's dependency injection
-    _dependencies: Optional[KnowledgeManagerDependencies] = None
-
-    # --- Pydantic AI lifecycle methods (conceptual) ---
-    # def __init__(self, llm_client: Any, dependencies: KnowledgeManagerDependencies, **kwargs):
-    #     super().__init__(llm_client=llm_client, **kwargs) # Or however Agent is initialized
-    #     self._dependencies = dependencies
-    #     logger.info("KnowledgeManagerAgent initialized.")
-
-    # For non-Pydantic AI Agent structure or direct instantiation:
-    def __init__(self, document_ingestion_system: DocumentIngestionSystem, **kwargs):
-        super().__init__(**kwargs) # If Agent is a Pydantic BaseModel
-        self._dependencies = KnowledgeManagerDependencies(
-            document_ingestion_system=document_ingestion_system
-        )
-        logger.info("KnowledgeManagerAgent initialized with DocumentIngestionSystem.")
+    def __init__(self, dependencies: KnowledgeManagerDependencies, **data: Any):
+        super().__init__(**data) # Pydantic BaseModel initialization
+        self.dependencies = dependencies
+        logger.info("KnowledgeManagerAgent initialized.")
 
     @property
     def document_ingestion_system(self) -> DocumentIngestionSystem:
-        if not self._dependencies:
-            raise ValueError("KnowledgeManagerAgent dependencies not initialized.")
-        return self._dependencies.document_ingestion_system
+        return self.dependencies.document_ingestion_system
 
-    async def ingest_document(self, source: DocumentSource) -> ProcessingResult:
+    async def ingest_document_from_source(self, source: DocumentSource) -> ProcessingResult:
         """
-        Ingests a single document source into the knowledge base.
-        This is a direct method call to the DocumentIngestionSystem.
-        In a full Pydantic AI setup, this might be a tool or a more complex interaction.
+        Ingests a single document from the given source.
+        Delegates to the DocumentIngestionSystem.
         """
-        logger.info(f"KnowledgeManagerAgent: Received request to ingest document: {source.file_name or source.url or 'bytes_content'}")
+        logger.info(f"KnowledgeManagerAgent: Ingesting document from source: {source.file_name or source.url or 'bytes_content'}")
         try:
             result = await self.document_ingestion_system.process_document(source)
-            logger.info(f"KnowledgeManagerAgent: Ingestion result for {result.source_display_name} - Status: {result.status}")
-            if result.status == ProcessingStatus.FAILURE:
-                logger.error(f"KnowledgeManagerAgent: Ingestion failed for {result.source_display_name}: {result.error_message}")
+            logger.info(f"KnowledgeManagerAgent: Ingestion for '{result.source_display_name}' completed with status: {result.status}")
             return result
         except Exception as e:
-            logger.exception(f"KnowledgeManagerAgent: Unexpected error during document ingestion for {source.file_name or source.url or 'bytes_content'}")
+            logger.exception(f"KnowledgeManagerAgent: Error during ingestion for source '{source.file_name or source.url or 'bytes_content'}'")
+            # Create a failure ProcessingResult
             return ProcessingResult(
-                document_id = "N/A", # Or generate a temporary ID
-                source_display_name=source.file_name or (source.file_path.name if source.file_path else str(source.url) if source.url else "bytes_content"),
+                document_id="N/A",
+                source_display_name=source.file_name or (Path(source.file_path).name if source.file_path else str(source.url) if source.url else "bytes_content"),
                 status=ProcessingStatus.FAILURE,
                 error_message=f"Unhandled exception in KnowledgeManagerAgent: {str(e)}",
-                processing_time_seconds=0.0 # Or measure if possible
+                processing_time_seconds=0.0
             )
 
-    async def ingest_documents_batch(self, sources: List[DocumentSource]) -> List[ProcessingResult]:
+    async def ingest_multiple_documents(self, sources: List[DocumentSource]) -> List[ProcessingResult]:
         """
-        Ingests a batch of document sources into the knowledge base.
+        Ingests a batch of documents from the given sources.
+        Delegates to the DocumentIngestionSystem.
         """
-        logger.info(f"KnowledgeManagerAgent: Received request to ingest a batch of {len(sources)} documents.")
+        logger.info(f"KnowledgeManagerAgent: Ingesting batch of {len(sources)} documents.")
         results = await self.document_ingestion_system.process_batch(sources)
-        logger.info(f"KnowledgeManagerAgent: Batch ingestion completed. Processed {len(results)} documents.")
+        logger.info(f"KnowledgeManagerAgent: Batch ingestion of {len(sources)} documents completed.")
         return results
 
-    # --- Other potential methods for KnowledgeManagerAgent ---
-    # async def search_knowledge_base(self, query: str, top_k: int = 5) -> List[KnowledgeBaseEntry]:
-    #     """
-    #     Searches the knowledge base for relevant entries.
-    #     This would likely involve using the Supabase client to query embeddings.
-    #     """
-    #     logger.info(f"KnowledgeManagerAgent: Searching knowledge base for query: '{query}'")
-    #     # 1. Generate embedding for the query using ModelManager
-    #     # 2. Call Supabase client to perform a vector similarity search
-    #     # 3. Format and return results
-    #     pass
+    # Placeholder for future methods:
+    # async def search_knowledge(self, query: str, top_k: int = 5) -> List[Any]:
+    #     # This would use ModelManager for query embedding and SupabaseClient for search
+    #     logger.info(f"KnowledgeManagerAgent: Searching knowledge for '{query}'")
+    #     return []
 
-    # async def validate_knowledge_item(self, item_id: str) -> bool:
-    #     """
-    #     Validates a specific knowledge item (e.g., through LLM review or other checks).
-    #     """
-    #     logger.info(f"KnowledgeManagerAgent: Validating knowledge item: {item_id}")
-    #     pass
-
-    # async def get_knowledge_item_details(self, item_id: str) -> Optional[KnowledgeBaseEntry]:
-    #     """
-    #     Retrieves detailed information about a specific knowledge item.
-    #     """
-    #     logger.info(f"KnowledgeManagerAgent: Retrieving details for knowledge item: {item_id}")
-    #     pass
+    # async def get_document_status(self, document_id: str) -> Optional[Any]:
+    #     # This would query the 'processed_documents' table via SupabaseClient
+    #     logger.info(f"KnowledgeManagerAgent: Getting status for document_id '{document_id}'")
+    #     return None
 
 
-# Example of how this agent might be instantiated and used:
-async def example_usage():
-    # These would be properly initialized instances in the main application
-    mock_supabase_client = SupabaseLearningClient()
-    mock_model_manager = ModelManager()
+# Example of how this agent might be instantiated and used in the application
+async def example_km_agent_usage():
+    # These would be singleton instances or provided by a DI container
+    # For this example, we assume they are concrete classes that can be instantiated
+    # In a real app, ensure Supabase client is properly initialized (e.g., with URL and key)
+
+    # NOTE: The following SupabaseLearningClient and ModelManager might need actual
+    # connection details or further mocking to run this example standalone.
+    # For unit/integration tests, these are typically fully mocked.
+
+    try:
+        # Attempt to create real instances if configuration allows, otherwise use placeholders
+        # This is just for the example_usage to be runnable.
+        # In the actual application, these would be properly configured.
+        supabase_client = SupabaseLearningClient(supabase_url="http://mock-supabase", supabase_key="mock-key")
+        model_manager = ModelManager() # Assuming ModelManager can be instantiated simply
+    except Exception as e:
+        logger.warning(f"Could not create real Supabase/ModelManager for example: {e}. Using basic placeholders.")
+        class PlaceholderSupabase:
+            async def upsert_processed_document(self, entry): return {"id": entry.id}
+            async def upsert_knowledge_base_entries(self, entries): return {"count": len(entries)}
+        class PlaceholderModelManager:
+            async def get_embeddings(self, texts, model_name): return [[0.0]*10 for _ in texts] # type: ignore
+
+        supabase_client = PlaceholderSupabase() # type: ignore
+        model_manager = PlaceholderModelManager() # type: ignore
+
 
     doc_ingestion_system = DocumentIngestionSystem(
-        supabase_client=mock_supabase_client,
-        model_manager=mock_model_manager
+        supabase_client=supabase_client, # type: ignore
+        model_manager=model_manager # type: ignore
     )
 
-    knowledge_manager = KnowledgeManagerAgent(
+    km_dependencies = KnowledgeManagerDependencies(
         document_ingestion_system=doc_ingestion_system
-        # In a real Pydantic AI setup, you might pass an LLM client here too.
-        # llm_client=Ollama(...) or similar
     )
+
+    knowledge_manager_agent = KnowledgeManagerAgent(dependencies=km_dependencies)
 
     # Create a dummy file for testing
-    dummy_file_path = "test_doc_for_km.txt"
+    dummy_file_path = "km_agent_test_doc.txt"
+    dummy_content = "This is a test document for the Knowledge Manager Agent integration."
     with open(dummy_file_path, "w") as f:
-        f.write("This is a test document for the Knowledge Manager.")
+        f.write(dummy_content)
 
-    source = DocumentSource(file_path=dummy_file_path, file_name="test_doc_for_km.txt")
+    source = DocumentSource(file_path=dummy_file_path, file_name="km_agent_test_doc.txt")
 
-    ingestion_result = await knowledge_manager.ingest_document(source)
-    print(f"Ingestion Result from KM Agent: {ingestion_result.status} for {ingestion_result.source_display_name}")
+    print(f"\n--- Example: Ingesting single document via KnowledgeManagerAgent ---")
+    result_single = await knowledge_manager_agent.ingest_document_from_source(source)
+    print(f"KM Agent Ingestion Result: Status - {result_single.status}, Doc ID - {result_single.document_id}")
+    if result_single.error_message:
+        print(f"Error: {result_single.error_message}")
 
+    # Clean up dummy file
     if os.path.exists(dummy_file_path):
         os.remove(dummy_file_path)
 
+    # Example for batch (using the same source type for simplicity)
+    dummy_file_path2 = "km_agent_test_doc2.txt"
+    with open(dummy_file_path2, "w") as f:
+        f.write("Another document for batch test.")
+    source2 = DocumentSource(file_path=dummy_file_path2, file_name="km_agent_test_doc2.txt")
+
+    print(f"\n--- Example: Ingesting batch of documents via KnowledgeManagerAgent ---")
+    results_batch = await knowledge_manager_agent.ingest_multiple_documents([source, source2])
+    for res in results_batch:
+        print(f"KM Agent Batch Result: Status - {res.status}, Doc ID - {res.document_id}, Source - {res.source_display_name}")
+        if res.error_message:
+            print(f"  Error: {res.error_message}")
+
+    if os.path.exists(dummy_file_path2):
+        os.remove(dummy_file_path2)
+
+
 if __name__ == "__main__":
-    # To run this example:
+    # This example_km_agent_usage can be run to test the basic flow.
+    # Note: It uses placeholder/mock initializations for Supabase and ModelManager
+    # if real ones can't be easily created without full app context.
+    # To run:
     # import asyncio
-    # import os
-    # asyncio.run(example_usage())
+    # from pathlib import Path # Add to top if not there
+    # asyncio.run(example_km_agent_usage())
     pass

@@ -215,14 +215,36 @@ class CodingDirector(BaseAgent):
 #### 5.1 Document Ingestion System
 **Location**: `main/document_ingestion_system.py`
 
+The Document Ingestion System is responsible for processing various document formats, extracting their content and metadata, preparing this data for semantic understanding, and storing it in the knowledge base. This system is a crucial part of Phase 5, enabling the assistant to learn from provided documents. It is primarily used internally by the `KnowledgeManagerAgent`.
+
 **Processing Capabilities**:
-- **Multi-format Support**: Handles PDF, DOCX, Markdown, Text, HTML, and common source code files (Python, JSON, YAML). Can ingest from local file paths, URLs, or direct byte content.
-- **Intelligent Extraction**: Parses documents to extract raw text content and available metadata (e.g., title, author, creation date).
-- **Content Chunking**: Divides extracted text into smaller, semantically relevant chunks suitable for embedding and retrieval.
-- **Embedding Generation**: Creates vector embeddings for each content chunk using configured models (via ModelManager) to enable semantic search.
-- **Quality Validation**: Performs basic assessment of extracted content quality, providing a score and identifying potential issues.
-- **Batch Processing**: Efficiently processes multiple documents concurrently.
-- **Knowledge Base Integration**: Stores processed documents and their embedded chunks into the Supabase knowledge base for later retrieval by other AI agents.
+- **Multi-format Support**: Handles PDF, DOCX, Markdown, Text, HTML, and common source code files (e.g., Python, JSON, YAML). It can ingest documents from local file paths, URLs, or direct byte content.
+- **Intelligent Extraction**: Parses documents to extract raw textual content. It also extracts available metadata such as title, author, creation/modification dates, and source filename.
+- **Content Chunking**: Divides the extracted text into smaller, semantically meaningful chunks. This is essential for effective embedding generation and targeted information retrieval. Uses `langchain.text_splitter` for robust chunking.
+- **Embedding Generation**: For each content chunk, vector embeddings are generated using models specified by the `ModelManager`. These embeddings enable semantic search capabilities within the knowledge base.
+- **Quality Validation**: Performs a basic assessment of the extracted content's quality, providing a score and identifying potential issues (e.g., empty content, non-chunkable text).
+- **Batch Processing**: Capable of efficiently processing multiple documents concurrently using asynchronous operations.
+- **Knowledge Base Integration**: Stores records of processed documents (e.g., in a `processed_documents` table) and the embedded content chunks (in the `knowledge_base` table) via the `SupabaseLearningClient`. This makes the ingested information accessible to other AI agents and learning mechanisms.
+- **Status Tracking**: Records the status (e.g., success, failure, partial success) and any errors for each ingestion attempt in the `processed_documents` table.
+
+The Pydantic models for data structures used by this system (like `DocumentSource`, `ProcessingResult`, `KnowledgeBaseEntry`) are defined in `main/models/document_processing.py`.
+
+#### 5.1.1 Knowledge Manager Agent
+**Location**: `main/agents/knowledge_manager_agent.py`
+
+The `KnowledgeManagerAgent` is a Pydantic AI-style agent responsible for overseeing the knowledge lifecycle within the Elite Coding Assistant. It orchestrates the ingestion of new information, manages the knowledge base, and will eventually provide interfaces for knowledge retrieval and validation.
+
+**Key Responsibilities and Features**:
+- **Document Ingestion Orchestration**: Utilizes the `DocumentIngestionSystem` to process and ingest documents from various sources (files, URLs, raw content). It exposes methods like `ingest_document_from_source` and `ingest_multiple_documents`.
+- **Interface to Knowledge Base**: Acts as the primary interface for adding new, structured information (derived from documents) into the Supabase `knowledge_base` and `processed_documents` tables.
+- **Dependency Management**: Takes necessary components like the `DocumentIngestionSystem` as dependencies, allowing for a modular and testable design.
+- **Future Capabilities (placeholder)**:
+    - Semantic search and retrieval from the knowledge base.
+    - Knowledge validation workflows.
+    - Management of knowledge item lifecycle (updates, archival).
+    - Integration with other agents that need to query or update knowledge.
+
+This agent is a key part of the "Knowledge Management Layer" and works closely with the `DocumentIngestionSystem` and `SupabaseLearningClient`.
 
 #### 5.2 Interactive Training Interface
 **Location**: `main/interactive_training_interface.py`
