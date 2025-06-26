@@ -79,6 +79,8 @@ rich>=13.7.0
 python-dateutil>=2.8.2
 typing-extensions>=4.8.0
 email-validator>=2.1.0
+langchain~=0.1.0 # For text splitting
+python-magic~=0.4.27 # For file type detection
 
 # OPTIONAL GPU MONITORING (NVIDIA ONLY)
 # Uncomment if you have NVIDIA GPUs and want GPU monitoring

@@ -216,10 +216,13 @@ class CodingDirector(BaseAgent):
 **Location**: `main/document_ingestion_system.py`
 
 **Processing Capabilities**:
-- **Multi-format Support**: PDF, DOCX, Markdown, Text, HTML
-- **Intelligent Extraction**: Content parsing with metadata
-- **Batch Processing**: Efficient bulk document handling
-- **Quality Validation**: Content quality assessment
+- **Multi-format Support**: Handles PDF, DOCX, Markdown, Text, HTML, and common source code files (Python, JSON, YAML). Can ingest from local file paths, URLs, or direct byte content.
+- **Intelligent Extraction**: Parses documents to extract raw text content and available metadata (e.g., title, author, creation date).
+- **Content Chunking**: Divides extracted text into smaller, semantically relevant chunks suitable for embedding and retrieval.
+- **Embedding Generation**: Creates vector embeddings for each content chunk using configured models (via ModelManager) to enable semantic search.
+- **Quality Validation**: Performs basic assessment of extracted content quality, providing a score and identifying potential issues.
+- **Batch Processing**: Efficiently processes multiple documents concurrently.
+- **Knowledge Base Integration**: Stores processed documents and their embedded chunks into the Supabase knowledge base for later retrieval by other AI agents.
 
 #### 5.2 Interactive Training Interface
 **Location**: `main/interactive_training_interface.py`
